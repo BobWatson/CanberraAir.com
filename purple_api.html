@@ -1,0 +1,56 @@
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script>
+        function update_purple_p_2_5(element_id, station_id) {
+            let p_2_5 = null;
+            let purpleJSONURL = "https://www.purpleair.com/json?callback=?&show=" + station_id;
+
+            $.getJSON(purpleJSONURL, function (data) {
+
+                let numer = 0;
+                let denom = 2;
+
+                // Purple devices return two values from two sensors. Sometimes one sensor returns a value, sometimes no sensors. So - ajust the average calculation to use whatever sensors we have, and throw exception if none are working.
+
+                if (typeof data.results[0].PM2_5Value === 'undefined') {
+                    denom--;
+                } else {
+                    numer = numer + Number(data.results[0].PM2_5Value);
+                }
+
+                if (typeof data.results[1].PM2_5Value === 'undefined') {
+                    denom--;
+                } else {
+                    numer = numer + Number(data.results[1].PM2_5Value);
+                }
+
+                if (denom > 0) {
+                    p_2_5 = numer / denom;
+                    p_2_5 = Math.round(p_2_5 * 10) / 10
+                } else {
+                    throw 'PurpleAir API error';
+                }
+            })
+            .done(function () {
+                try {
+                    $(element_id).html("PM2.5 is " + p_2_5);
+                } catch (e) {
+                    $(element_id).html("Error loading PM2.5 value");
+                }
+                setInterval(update_purple_p_2_5(element_id, station_id), (900000 + (Math.random() * 60000)));
+            });
+        }
+
+        $(function () {
+            update_purple_p_2_5("#purp42085", 42085); // Downer
+            update_purple_p_2_5("#purp41449", 41449); // Chisholm
+        });
+
+    </script>
+</head>
+<body>
+    <div id="purp42085">Loading...</div>
+    <div id="purp41449">Loading...</div>
+</body>
+</html>
