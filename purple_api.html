@@ -33,11 +33,8 @@
                 }
             })
             .done(function () {
-                try {
-                    $(element_id).html("PM2.5 is " + p_2_5);
-                } catch (e) {
-                    $(element_id).html("Error loading PM2.5 value");
-                }
+                $(element_id).html("PM 2.5 is " + p_2_5);
+
                 setInterval(update_purple_p_2_5(element_id, station_id), (900000 + (Math.random() * 60000)));
             });
         }
