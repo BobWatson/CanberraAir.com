@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -952,9 +952,11 @@
         Civic: "#636363",
         Florey: "#f8b2b8",
         Monash: "#71abd9"
-      };
+        };
 
       GOOGLE_LOADED = false;
+
+      next_update_date = new Date();
 
       function draw_graphs() {
         if (!GOOGLE_LOADED) {
@@ -1026,23 +1028,13 @@
         document.getElementById("next-update").innerHTML = date_format(
           new Date(last_update + 60 * 60 * 1000),
           false
-        );
+          );
+
+        next_update_date = new Date(last_update + 60 * 60 * 1000),
         draw_graphs();
       }
       // !!window.chrome && render_current_aq();
       render_current_aq();
-      
-      // Update AQ at 56 past the hour
-      async function job_update_aq() {
-        var mins = new Date().getMinutes();
-        if(mins == "56") {
-          render_current_aq();
-          drawAQI();
-          await new Promise(r => setTimeout(r, 30000));
-        }
-      }
-      
-      setInterval(job_update_aq, 30000);
 
       function aqi_rating(aqi) {
         if (aqi >= 200) return "Hazardous";
@@ -1331,7 +1323,34 @@
         "resize",
         () => GOOGLE_LOADED && drawAQI(),
         false
-      );
+        );
+
+      // After the next expected update date, wait 30-60s and retry
+      async function job_update_aq() {
+        current_date = new Date();
+
+        refresh_timer = Math.floor((30000 + (Math.random() * 30000)));
+
+        timer_refresh_date = current_date;
+        timer_refresh_date.setSeconds(timer_refresh_date.getSeconds() + (refresh_timer/1000));
+
+        if (current_date > next_update_date) {
+          render_current_aq();
+          draw_graphs();
+
+          // next_udpdate_date is set when successful update of current aq - if this test still succeeds, we didn't update.
+
+          if (current_date > next_update_date) {
+            console.log(`AQ data not updated, next refresh check at ${timer_refresh_date}`);
+          }
+        }
+
+        setTimeout(job_update_aq, refresh_timer);
+      }
+
+      // Start update timer
+      job_update_aq();
+
     </script>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
