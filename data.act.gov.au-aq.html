@@ -60,14 +60,20 @@
                         }
 
                         let next_update = new Date(Date.parse(current_data.refresh_time) + current_data.max_data_age);
+                        let timeout = current_data.refresh_interval;
+
                         if (next_update < new Date()) {
-                            next_update = new Date(Date.now()+ current_data.refresh_interval);
-                            console.log("Have old data. Retrying at "+next_update);
+                            next_update = new Date(Date.now() + current_data.refresh_interval);
+                            console.log("Have old data. Retrying at " + next_update);
                         } else {
-                            console.log("Have new data. Next refresh at "+next_udpdate);
+                            console.log("Have new data. Next refresh at " + next_udpdate);
+
+                            timeout = next_update - Date.now();
                         }
 
                         callback();
+
+                        setTimeout(current_data.getCurrent, timeout, callback);
                     });
                 } else {
                     console.log("Data not yet old enough, waiting...");
@@ -129,7 +135,7 @@
         }
 
         $(function () {
-            setInterval(current_data.getCurrent(data_is_ready), current_data.refresh_interval);
+            current_data.getCurrent(data_is_ready);
         });
     </script>
 </head>
