@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8" />
     <title></title>
-    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script>
         function sortByKey(array, key, direction) {
             switch (direction) {
@@ -49,8 +49,8 @@
                             //"$$app_token": "YOURAPPTOKENHERE"
                         }
                     }).done(function (aq_data) {
-                        current_data.data = aq_data;
-                        current_data.refresh_time = new Date();
+                        current_data.data = sortByKey(aq_data, "datetime", "asc");
+                        current_data.refresh_time = Date.parse(current_data.data[0].datetime);
                         callback();
                     });
                 } else {
@@ -113,6 +113,7 @@
 
         $(function () {
             current_data.getCurrent(data_is_ready);
+            setInterval(current_data.getCurrent(data_is_ready), 1000 * 60 * 5);
         });
     </script>
 </head>
