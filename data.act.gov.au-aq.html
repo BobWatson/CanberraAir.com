@@ -31,6 +31,7 @@
             refresh_time: new Date(2018, 1, 1, 0, 0, 0, 0),
             days_to_fetch: 7,
             max_data_age: 60 * 60 * 1000,
+            refresh_interval: 1000 * 60 * 5,
             getCurrent: function (callback) {
                 if (((new Date()) - current_data.refresh_time) > current_data.max_data_age) {
 
@@ -50,10 +51,26 @@
                         }
                     }).done(function (aq_data) {
                         current_data.data = sortByKey(aq_data, "datetime", "asc");
-                        current_data.refresh_time = new Date(Date.parse(current_data.data[0].datetime));
+
+                        if (current_data.refresh_time == new Date(Date.parse(current_data.data[0].datetime))) {
+                            console.log("Data refreshed, did not update local data.");
+                        } else {
+                            current_data.refresh_time = new Date(Date.parse(current_data.data[0].datetime));
+                            console.log("Data refreshed, updated local data.");
+                        }
+
+                        let next_update = new Date(Date.parse(current_data.refresh_time) + current_data.max_data_age);
+                        if (next_update < new Date()) {
+                            next_update = new Date(Date.now()+ current_data.refresh_interval);
+                            console.log("Have old data. Retrying at "+next_update);
+                        } else {
+                            console.log("Have new data. Next refresh at "+next_udpdate);
+                        }
+
                         callback();
                     });
                 } else {
+                    console.log("Data not yet old enough, waiting...");
                     callback();
                 }
             }
@@ -112,8 +129,7 @@
         }
 
         $(function () {
-            current_data.getCurrent(data_is_ready);
-            setInterval(current_data.getCurrent(data_is_ready), 1000 * 60 * 5);
+            setInterval(current_data.getCurrent(data_is_ready), current_data.refresh_interval);
         });
     </script>
 </head>
