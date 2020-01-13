@@ -5,6 +5,9 @@
 <head>
     <meta charset="utf-8" />
     <title></title>
+    <style>
+        body { font: 12px sans-serif;}
+    </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script>
         function sortByKey(array, key, direction) {
@@ -30,7 +33,7 @@
             data: null,
             refresh_time: new Date(2018, 1, 1, 0, 0, 0, 0),
             days_to_fetch: 7,
-            max_data_age: 60 * 60 * 1000,
+            max_data_age: 2 * 60 * 60 * 1000, // Data seems to be consistently a bit more than 2h old
             refresh_interval: 1000 * 60 * 5,
             getCurrent: function (callback) {
                 if (((new Date()) - current_data.refresh_time) > current_data.max_data_age) {
@@ -66,7 +69,7 @@
                             next_update = new Date(Date.now() + current_data.refresh_interval);
                             console.log("Have old data. Retrying at " + next_update);
                         } else {
-                            console.log("Have new data. Next refresh at " + next_udpdate);
+                            console.log("Have new data. Next refresh at " + next_update);
 
                             timeout = next_update - Date.now();
                         }
@@ -138,7 +141,8 @@
             write_latest_data_for_station("Florey", "Florey", current_data.data)
             write_latest_data_for_station("Civic", "Civic", current_data.data)
             write_latest_data_for_station("Monash", "Monash", current_data.data)
-            write_history_table(current_data.data);
+            //write_history_table(current_data.data);
+            drawGraph(current_data.data);
         }
 
         $(function () {
@@ -151,7 +155,8 @@
     <div id="Florey">Loading...</div>
     <div id="Civic">Loading...</div>
     <div id="Monash">Loading...</div>
-    <table id="readings">
+    <div id="aq_chart"></div>
+    <table id="readings" style="display:none;">
         <thead>
             <tr>
                 <th>Location</th>
@@ -169,6 +174,85 @@
             </tr>
         </tbody>
     </table>
-</body>
 
-</html>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script>
+        function drawGraph(data) {
+
+            data = $.grep(data, function (row) {
+                return (typeof row.pm2_5_1_hr !== "undefined" && row.station !== "undefined" && row.datetime !== "undefined")
+            });
+
+            data.forEach(function (d) {
+                d.station = d.station;
+                d.date = new Date(d.datetime);
+                d.value = +d.pm2_5_1_hr;
+            });
+
+            // set the dimensions and margins of the graph
+            var margin = {top: 10, right: 30, bottom: 120, left: 60},
+                width = 1024 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
+
+            // append the svg object to the body of the page
+            var svg = d3.select("#aq_chart")
+              .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+              .append("g")
+                .attr("transform",
+                      "translate(" + margin.left + "," + margin.top + ")");
+
+              // group the data: I want to draw one line per group
+              var sumstat = d3.nest() // nest function allows to group the calculation per level of a factor
+                .key(function(d) { return d.station;})
+                .entries(data);
+
+              // Add X axis --> it is a date format
+              var x = d3.scaleLinear()
+                .domain(d3.extent(data, function (d) { return d.date; }))
+                .range([ 0, width ]);
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%Y-%m-%d %H:%M")))
+                .selectAll("text")
+                    .attr("transform", "rotate(-60)")
+                    .attr("y", 0)
+                    .attr("x", -10)
+                    .attr("dy", ".5em")
+                    .style("text-anchor", "end");
+
+              // Add Y axis
+              var y = d3.scaleLinear()
+                .domain([0, d3.max(data, function(d) { return +d.value; })])
+                .range([ height, 0 ]);
+              svg.append("g")
+                .call(d3.axisLeft(y));
+
+              // color palette
+              var res = sumstat.map(function(d){ return d.key }) // list of group names
+              var color = d3.scaleOrdinal()
+                .domain(res)
+                .range(['#ff0000','#00ff00','#0000ff'])
+
+              // Draw the line
+              svg.selectAll(".line")
+                  .data(sumstat)
+                  .enter()
+                  .append("path")
+                    .attr("fill", "none")
+                    .attr("stroke", function(d){ return color(d.key) })
+                    .attr("stroke-width", 1.5)
+                    .attr("d", function(d){
+                      return d3.line()
+                        .x(function(d) { return x(d.date); })
+                        .y(function(d) { return y(+d.value); })
+                        (d.values)
+                    })
+
+        }
+    </script>
+
+</body >
+
+</html >
