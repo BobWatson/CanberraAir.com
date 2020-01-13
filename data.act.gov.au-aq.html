@@ -74,6 +74,12 @@
                         callback();
 
                         setTimeout(current_data.getCurrent, timeout, callback);
+
+                    }).fail(function () {
+                        let next_update = new Date(Date.now() + current_data.refresh_interval);
+                        console.log("Failed to refresh data. Next attempt at " + next_udpdate);
+
+                        setTimeout(current_data.getCurrent, current_data.refresh_interval, callback);
                     });
                 } else {
                     console.log("Data not yet old enough, waiting...");
@@ -85,8 +91,9 @@
         async function write_history_table(data) {
             let rows = [];
             rows = sortByKey(data, "datetime", "asc");
+            $('#readings > tbody').empty();
             $.each(rows, function (key, record) {
-                $('#readings').after("<tr><td>" + record.station + "</td><td>" + record.datetime + "</td><td>" + record.pm2_5_1_hr + "</td><td>" + record.pm2_5_24hr_rolling + "</td></tr>");
+                $('#readings > tbody').append("<tr><td>" + record.station + "</td><td>" + record.datetime + "</td><td>" + record.pm2_5_1_hr + "</td><td>" + record.pm2_5_24hr_rolling + "</td></tr>");
             });
         }
 
@@ -141,10 +148,9 @@
 </head>
 
 <body>
-    <div id="Florey"></div>
-    <div id="Civic"></div>
-    <div id="Monash"></div>
-    <div id="aq_dataviz"></div>
+    <div id="Florey">Loading...</div>
+    <div id="Civic">Loading...</div>
+    <div id="Monash">Loading...</div>
     <table id="readings">
         <thead>
             <tr>
@@ -154,6 +160,14 @@
                 <th>Reading (24h rolling)</th>
             </tr>
         </thead>
+        <tbody>
+            <tr>
+                <td>Loading...</td>
+                <td>Loading...</td>
+                <td>Loading...</td>
+                <td>Loading...</td>
+            </tr>
+        </tbody>
     </table>
 </body>
 
