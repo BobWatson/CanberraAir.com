@@ -36,7 +36,7 @@
                 if (((new Date()) - current_data.refresh_time) > current_data.max_data_age) {
 
                     let earliest_date = new Date()
-                    earliest_date.setDate(earliest_date.getDate() - this.days_to_fetch);
+                    earliest_date.setDate(earliest_date.getDate() - current_data.days_to_fetch);
 
                     let formatted_date = earliest_date.getFullYear() + "-" + (earliest_date.getMonth() + 1) + "-" + earliest_date.getDate() + "T" + earliest_date.getHours() + ":" + earliest_date.getMinutes() + ":" + earliest_date.getSeconds()
 
@@ -77,7 +77,7 @@
 
                     }).fail(function () {
                         let next_update = new Date(Date.now() + current_data.refresh_interval);
-                        console.log("Failed to refresh data. Next attempt at " + next_udpdate);
+                        console.log("Failed to refresh data. Next attempt at " + next_update);
 
                         setTimeout(current_data.getCurrent, current_data.refresh_interval, callback);
                     });
@@ -131,7 +131,7 @@
                 }
             }
 
-            $('#' + id).html("Current value as at "+current_data.refresh_time.toLocaleString()+" at " + station_name + " is " + value + " (" + trend + " over last hour).");
+            $('#' + id).html("Current value as at " + current_data.refresh_time.toLocaleString() + " at " + station_name + " is " + value + " (" + trend + " over last hour).");
         }
 
         function data_is_ready() {
