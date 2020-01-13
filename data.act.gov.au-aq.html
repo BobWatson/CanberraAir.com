@@ -195,6 +195,7 @@
                 height = 400 - margin.top - margin.bottom;
 
             // append the svg object to the body of the page
+            d3.select("#aq_chart").select("svg").remove();
             var svg = d3.select("#aq_chart")
               .append("svg")
                 .attr("width", width + margin.left + margin.right)
