@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script>
+        function sortByKey(array, key, direction) {
+            switch (direction) {
+                case "desc":
+                    return array.sort(function (a, b) {
+                        let x = a[key];
+                        let y = b[key];
+                        return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+                    });
+                    break;
+                case "asc":
+                    return array.sort(function (a, b) {
+                        let x = a[key];
+                        let y = b[key];
+                        return ((x > y) ? -1 : ((x < y) ? 1 : 0));
+                    });
+                    break;
+            }
+        }
+
+        var current_data = {
+            data: null,
+            refresh_time: new Date(2018, 1, 1, 0, 0, 0, 0),
+            days_to_fetch: 7,
+            max_data_age: 60 * 60 * 1000,
+            getCurrent: function (callback) {
+                if (((new Date()) - current_data.refresh_time) > current_data.max_data_age) {
+
+                    let earliest_date = new Date()
+                    earliest_date.setDate(earliest_date.getDate() - this.days_to_fetch);
+
+                    let formatted_date = earliest_date.getFullYear() + "-" + (earliest_date.getMonth() + 1) + "-" + earliest_date.getDate() + "T" + earliest_date.getHours() + ":" + earliest_date.getMinutes() + ":" + earliest_date.getSeconds()
+
+                    $.ajax({
+                        url: "https://www.data.act.gov.au/resource/ufvu-jybu.json",
+                        type: "GET",
+                        data: {
+                            "$limit": 1000,
+                            "$where": "`datetime` > '" + formatted_date + "'",
+                            "$order": "datetime DESC",
+                            //"$$app_token": "YOURAPPTOKENHERE"
+                        }
+                    }).done(function (aq_data) {
+                        current_data.data = aq_data;
+                        current_data.refresh_time = new Date();
+                        callback();
+                    });
+                } else {
+                    callback();
+                }
+            }
+        };
+
+        async function write_history_table(data) {
+            let rows = [];
+            rows = sortByKey(data, "datetime", "asc");
+            $.each(rows, function (key, record) {
+                $('#readings').after("<tr><td>" + record.station + "</td><td>" + record.datetime + "</td><td>" + record.pm2_5_1_hr + "</td><td>" + record.pm2_5_24hr_rolling + "</td></tr>");
+            });
+        }
+
+        async function write_latest_data_for_station(id, station_name, data) {
+            let rows = $.grep(data, function (row) {
+                return row.station === station_name;
+            });
+
+            rows = sortByKey(rows, "datetime", "asc");
+
+            let value = null;
+            let current_index = null;
+            let previous_index = null;
+
+            for (i = 0; i < 12; i++) {
+                if (typeof rows[i].pm2_5_1_hr === "undefined") {
+                    value = null
+                } else {
+                    value = rows[i].pm2_5_1_hr;
+                    current_index = i;
+                    previous_index = i + 1;
+                    break;
+                }
+            }
+
+            let trend = null;
+
+            if (typeof rows[previous_index].pm2_5_1_hr === "undefined") {
+                trend = "unknown trend";
+            } else {
+                if (rows[current_index].pm2_5_1_hr > rows[previous_index].pm2_5_1_hr) {
+                    trend = "increasing"
+                } else {
+                    trend = "decreasing"
+                }
+            }
+
+            $('#' + id).html("Current value at " + station_name + " is " + value + " (" + trend + " over last hour)");
+        }
+
+        function data_is_ready() {
+            write_latest_data_for_station("Florey", "Florey", current_data.data)
+            write_latest_data_for_station("Civic", "Civic", current_data.data)
+            write_latest_data_for_station("Monash", "Monash", current_data.data)
+            write_history_table(current_data.data);
+        }
+
+        $(function () {
+            current_data.getCurrent(data_is_ready);
+        });
+    </script>
+</head>
+
+<body>
+    <div id="Florey"></div>
+    <div id="Civic"></div>
+    <div id="Monash"></div>
+    <div id="aq_dataviz"></div>
+    <table id="readings">
+        <thead>
+            <tr>
+                <th>Location</th>
+                <th>Time</th>
+                <th>Reading (1h)</th>
+                <th>Reading (24h rolling)</th>
+            </tr>
+        </thead>
+    </table>
+</body>
+
+</html>
